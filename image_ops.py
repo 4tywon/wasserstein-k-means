@@ -4,22 +4,18 @@ import pywt
 from tqdm import tqdm
 
 class Dataset_Operations:
-    def __init__(self, images, metric='wemd', level=6, fast=True):
+    def __init__(self, images, metric='wemd', level=6):
         self.images = mask(images, images[0].shape)
         self.metric = metric
         if metric == 'wemd':
             self.wavelet_space = wave_transform_volumes(self.images, level)
         self.n = self.images.shape[0]
         self.level = level
-        self.fast = fast
 
     def batch_distance_to(self, image):
         if self.metric == 'l2':
-            if self.fast:
-                distances = [((self.images[i] - image)**2).sum() for i in range(len(self.images))]
-                return np.array(np.sqrt(distances))
-            else:
-                return np.sqrt(((self.images - image)**2).sum(axis = 2).sum(axis = 1))
+            distances = [((self.images[i] - image)**2).sum() for i in range(len(self.images))]
+            return np.array(np.sqrt(distances))
 
         elif self.metric == 'wemd':
             wavelet_img =  wave_transform_volumes([image], self.level)[0]

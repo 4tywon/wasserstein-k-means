@@ -17,7 +17,7 @@ def view_centers(labels, centers, vmin = None, vmax = None):
         plt.show()
     else:
         ax.imshow(montage(np.array(sorted_centers)), vmin=vmin, vmax=vmax)
-        plt.show()            
+        plt.show()
     counts = sorted(counts, key=lambda x:x[1], reverse=True)
     sorted_labels = np.zeros(len(labels))
     for i, entry in enumerate(counts):

@@ -2,7 +2,7 @@ from scipy import ndimage
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage.util import montage
+import multiprocessing
 
 class k_means:
     def __init__(self, k, n_angles, experiment_name):
@@ -33,7 +33,7 @@ class k_means:
 
         pool = multiprocessing.Pool(processes=ncores)
 
-        for _ in range(niter):
+        for _ in tqdm(range(niter)):
             dists = np.array(pool.map(update_distance_for, self.centers))
             distances = np.transpose(distances, (2,0,1))
             min_distance_idxs = distances.reshape(image_dataset.n, self.k * len(self.angles)).argmin(axis=1)
@@ -49,6 +49,7 @@ class k_means:
                 idxs[label].append(idx)
                 orientation_lists[label].append(orientations[idx])
             self.centers = image_dataset.batch_oriented_average(idxs, orientation_lists)
+            self.save()
 
     def initialize_centers(self, image_dataset, init='random_selected'):
         if self.centers is not None:
@@ -66,9 +67,13 @@ class k_means:
             self.centers = self._k_plus_plus(image_dataset)
 
     def save(self):
+        if not os.path.exists('experiment_runs'):
+            os.makedirs('experiment_runs')
         centers_name = self.name + "-centers"
         labels_name = self.name + "-labels"
-        np.save(centers_name, self.centers)
+        np.save("experiment_runs/" + centers_name, self.centers)
+        np.save("experiment_runs/" + labels_name, self.labels)
+
 
     def _k_plus_plus(self, image_space):
         chosen_centers_idx = [np.random.randint(image_space.n)]
