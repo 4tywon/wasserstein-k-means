@@ -5,10 +5,11 @@ import numpy as np
 from skimage.util import montage
 
 class k_means:
-    def __init__(self, k, n_angles):
+    def __init__(self, k, n_angles, experiment_name):
         self.k = k
         self.angles = [360/n_angles * i for i in range(n_angles)]
         self.reset()
+        self.name = experiment_name
 
     def load(self, k, n_angles, centerfile, labelfile):
         self.k = k
@@ -21,19 +22,21 @@ class k_means:
         self.evaluation_metrics = None
         self.labels = None
 
-    def train(self, image_metric_space, niter = 5, init='random_selected'):
+    def train(self, image_dataset, niter = 5, ncores = 1, init='random_selected'):
+        self.initialize_centers(image_dataset, init=init)
 
-        self.initialize_centers(image_metric_space, init=init)
+        def update_distance_for(center):
+            dists = []
+            for j, angle in enumerate(self.angles):
+                dist.append(image_dataset.batch_distance_to(ndimage.rotate(center, angle, reshape=False)))
+            return dists
+
+        pool = multiprocessing.Pool(processes=ncores)
 
         for _ in range(niter):
-            self.view_centers()
-            distances = np.zeros((image_metric_space.n, self.k, len(self.angles)))
-            print("Clustering")
-            for i, center in enumerate(tqdm(self.centers)):
-                for j, angle in enumerate(self.angles):
-                    dist = image_metric_space.batch_distance_to(ndimage.rotate(center, angle, reshape=False))
-                    distances[:, i, j] = dist
-            min_distance_idxs = distances.reshape(image_metric_space.n, self.k * len(self.angles)).argmin(axis=1)
+            dists = np.array(pool.map(update_distance_for, self.centers))
+            distances = np.transpose(distances, (2,0,1))
+            min_distance_idxs = distances.reshape(image_dataset.n, self.k * len(self.angles)).argmin(axis=1)
 
             labels = np.floor(min_distance_idxs / len(self.angles))
             self.labels = labels
@@ -45,72 +48,27 @@ class k_means:
                 label = int(label)
                 idxs[label].append(idx)
                 orientation_lists[label].append(orientations[idx])
-            print("Averaging")
-            self.centers = image_metric_space.batch_oriented_average(idxs, orientation_lists)
+            self.centers = image_dataset.batch_oriented_average(idxs, orientation_lists)
 
-    def initialize_centers(self, image_metric_space, init='random_selected'):
+    def initialize_centers(self, image_dataset, init='random_selected'):
         if self.centers is not None:
             return
 
         if init == 'random_selected':
             centers = []
-            center_idxs = np.random.choice([i for i in range(image_metric_space.n)], self.k, replace=False)
+            center_idxs = np.random.choice([i for i in range(image_dataset.n)], self.k, replace=False)
             for i in center_idxs:
-                shape = image_metric_space[i].shape
-                centers.append(image_metric_space[i] + np.abs(np.random.normal(0, 0.0001, shape)))
+                shape = image_dataset[i].shape
+                centers.append(image_dataset[i] + np.abs(np.random.normal(0, 0.0001, shape)))
             self.centers = np.array(centers)
 
         if init == 'k++':
-            self.centers = self._k_plus_plus(image_metric_space)
+            self.centers = self._k_plus_plus(image_dataset)
 
-    def view_centers(self, vmin = None, vmax = None):
-        labels = self.labels
-        centers = self.centers
-        if labels is None:
-            return
-        counts = dict()
-        for label in labels:
-            counts[label] = counts[label] + 1 if label in counts else 1
-        counts = [(label, counts[label]) for label in counts]
-        center_counts = [(centers[int(label[0])], label[1]) for label in counts]
-        sorted_centers = sorted(center_counts, key=lambda x:x[1], reverse=True)
-        sorted_centers = [c[0] for c in sorted_centers]
-        fig, ax = plt.subplots(figsize=(30, 30))
-        if vmin is None or vmax is None:
-            ax.imshow(montage(np.array(sorted_centers)))
-            plt.show()
-        else:
-            ax.imshow(montage(np.array(sorted_centers)), vmin=vmin, vmax=vmax)
-            plt.show()            
-        counts = sorted(counts, key=lambda x:x[1], reverse=True)
-        sorted_labels = np.zeros(len(labels))
-        for i, entry in enumerate(counts):
-            sorted_labels[labels == entry[0]] = i
-        labels = sorted_labels
-
-        plt.hist(labels, bins=len(self.centers))
-        plt.show()
-
-    def view_angle_metrics(self, rots):
-        labels = self.labels
-        histograms = [cluster_histogram(i, rots, labels) for i in range(len(self.centers))]
-        if labels is None:
-            return
-        counts = dict()
-        for label in labels:
-            counts[label] = counts[label] + 1 if label in counts else 1
-        counts = [(label, counts[label]) for label in counts]
-        hist_counts = [(histograms[int(label[0])], label[1]) for label in counts]
-        sorted_hists = sorted(hist_counts, key=lambda x:x[1], reverse=True)
-        sorted_hists = [h[0] for h in sorted_hists]
-        plot_histograms(sorted_hists)
-
-
-    def save(self, name):
-        centers_name = name + "-centers"
-        labels_name = name + "-labels"
+    def save(self):
+        centers_name = self.name + "-centers"
+        labels_name = self.name + "-labels"
         np.save(centers_name, self.centers)
-
 
     def _k_plus_plus(self, image_space):
         chosen_centers_idx = [np.random.randint(image_space.n)]
@@ -136,32 +94,3 @@ class k_means:
         for idx in chosen_centers_idx:
             centers.append(image_space[idx])
         return centers
-
-
-
-
-def angle(R1, R2):
-    dot = R1.T[:,2].T @ R2.T[:,2]
-    if np.abs(dot) > 1:
-        dot = dot/ np.abs(dot)
-    theta = np.arccos(dot)* (180/np.pi)
-    return theta
-
-def cluster_histogram(i, rotations, labels):
-    rots = rotations[labels == i]
-    angles = []
-    for i in range(len(rots)):
-        for j in range(i, len(rots)):
-            angles.append(angle(rots[i], rots[j]))
-    return angles
-
-def plot_histograms(hists):
-    fig = plt.figure(figsize=(30,30))
-    n = len(hists)
-    cols = 7
-    rows = np.ceil(n/7)
-    for i, hist in enumerate(hists):
-        ax = fig.add_subplot(rows, cols, i + 1)
-        ax.hist(hist, bins=180)
-    plt.show()
-        
