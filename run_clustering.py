@@ -14,15 +14,15 @@ logging.basicConfig(level = logging.INFO)
 ## Experiment Parameters
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--snr', type=int, nargs=1, default=0)
-parser.add_argument('--k', type=int, nargs=1, default=100)
-parser.add_argument('--n_angles', type=int, nargs=1, default=200)
-parser.add_argument('--niter', type=int, nargs=1, default=5)
-parser.add_argument('--ncores', type=int, nargs=1, default=4)
+parser.add_argument('--snr', type=int, default=0)
+parser.add_argument('--k', type=int,  default=100)
+parser.add_argument('--n_angles', type=int,  default=200)
+parser.add_argument('--niter', type=int, default=5)
+parser.add_argument('--ncores', type=int, default=4)
 
-parser.add_argument('--data_file_prefix', type=str, nargs=1, default='ribosome')
-parser.add_argument('--clustering_type', type=str, nargs=1, default='l2')
-parser.add_argument('--experiment_name', type=str, nargs=1, required=True)
+parser.add_argument('--data_file_prefix', type=str, default='ribosome')
+parser.add_argument('--clustering_type', type=str,  default='l2')
+parser.add_argument('--experiment_name', type=str, required=True)
 
 
 args = parser.parse_args()
