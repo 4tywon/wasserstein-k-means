@@ -74,7 +74,6 @@ class k_means:
         np.save("experiment_runs/" + centers_name, self.centers)
         np.save("experiment_runs/" + labels_name, self.labels)
 
-
     def _k_plus_plus(self, image_space):
         chosen_centers_idx = [np.random.randint(image_space.n)]
         distances = np.zeros((image_space.n, len(chosen_centers_idx),len(self.angles)))

@@ -32,7 +32,7 @@ class Dataset_Operations:
     def batch_oriented_average(self, idxs, orientation_lists, strategy='mean', ncores = 1, **kwargs):
         ''' orientations will be opposite the direction that the image will be rotated in'''
         rotated_image_sets = []
-        for idx, orientations in tqdm(zip(idxs, orientation_lists)):
+        for idx, orientations in zip(idxs, orientation_lists):
             rotated_images = [ndimage.rotate(im, -1 * orientations[i], reshape=False) for i, im in enumerate(self.images[idx])]
             rotated_image_sets.append(np.asarray(rotated_images))
 
