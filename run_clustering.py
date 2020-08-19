@@ -149,4 +149,4 @@ def cluster(niter = 5, ncores = 1, init='random_selected'):
         centers = image_dataset.batch_oriented_average(idxs, orientation_lists)
         save()
 
-cluster(niter=n_iter, ncores=ncores)
+cluster(niter=n_iter, ncores=ncores, init='k++')
