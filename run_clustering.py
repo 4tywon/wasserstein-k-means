@@ -59,14 +59,12 @@ else:
 
 noisy_data = noisy_data.astype('float32')
 downsampling_ratio = downsampled_resolution / noisy_data.shape[1]
-low_res_noise_data = np.array([rescale(im, downsampling_ratio) for im in noisy_data]).astype('float32')
 
 logger.info("Beginning experiment ... ")
 logger.info("Using " + clustering_type + " clustering with " + str(k) + " centers and " + str(n_angles) + "angles")
 logger.info("Requested " + str(ncores) + " out of " + str(multiprocessing.cpu_count()))
 
 image_dataset = Dataset_Operations(noisy_data, metric=clustering_type)
-low_res_data = Dataset_Operations(low_res_noise_data, metric=clustering_type)
 ## Clustering Logic
 
 def update_distance_for(center):
@@ -102,6 +100,9 @@ def initialize_centers(init='random_selected'):
         centers = _k_plus_plus()
 
 def _k_plus_plus():
+    low_res_noise_data = np.array([rescale(im, downsampling_ratio) for im in noisy_data]).astype('float32')
+    low_res_data = Dataset_Operations(low_res_noise_data, metric=clustering_type)
+
     chosen_centers_idx = [np.random.randint(low_res_data.n)]
     initialization_angles = angles[::int(1/downsampling_ratio)]
     distances = np.zeros((low_res_data.n, len(chosen_centers_idx),len(initialization_angles)))
@@ -151,4 +152,5 @@ def cluster(niter = 5, ncores = 1, init='random_selected'):
         centers = image_dataset.batch_oriented_average(idxs, orientation_lists)
         save()
 
-cluster(niter=n_iter, ncores=ncores, init='k++')
+if __name__ == "__main__":
+    cluster(niter=n_iter, ncores=ncores, init='k++')
