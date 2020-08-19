@@ -103,17 +103,19 @@ def initialize_centers(init='random_selected'):
 
 def _k_plus_plus():
     chosen_centers_idx = [np.random.randint(low_res_data.n)]
-    distances = np.zeros((low_res_data.n, len(chosen_centers_idx),len(angles)))
+    initialization_angles = angles[::int(1/downsampling_ratio)]
+    distances = np.zeros((low_res_data.n, len(chosen_centers_idx),len(initialization_angles)))
+
     for _ in tqdm(range(k-1)):
         if len(chosen_centers_idx) > 1:
-            new_distances = np.zeros((low_res_data.n, len(chosen_centers_idx),len(angles)))
+            new_distances = np.zeros((low_res_data.n, len(chosen_centers_idx),len(initialization_angles)))
             new_distances[:, :len(chosen_centers_idx) - 1, :] = old_distances
             distances = new_distances
-        for j, angle in enumerate(angles):
+        for j, angle in enumerate(initialization_angles):
             dist = low_res_data.batch_distance_to(ndimage.rotate(low_res_data[chosen_centers_idx[-1]], angle, reshape=False))
             distances[:, -1, j] = dist
         old_distances = distances.copy()
-        distances = distances.reshape(low_res_data.n, len(chosen_centers_idx) *len(angles))
+        distances = distances.reshape(low_res_data.n, len(chosen_centers_idx) *len(initialization_angles))
         distances = distances.min(axis=1)**2
         distances[chosen_centers_idx] = 0
         probabilities = distances/distances.sum()
