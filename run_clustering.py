@@ -5,6 +5,7 @@ import multiprocessing
 import argparse
 from tqdm import tqdm 
 from scipy import ndimage
+from skimage.transform import rescale
 
 from image_ops import Dataset_Operations
 
@@ -40,6 +41,8 @@ ncores = args.ncores
 centers = None
 labels = None
 
+downsampled_resolution = 64
+
 ## Data Loading
 def add_noise(images, snr):
     power_clean = (images**2).sum()/np.size(images)
@@ -54,12 +57,16 @@ if snr == 0:
 else:
     noisy_data = add_noise(data, snr)
 
+noisy_data = noisy_data.astype('float32')
+downsampling_ratio = downsampled_resolution / noisy_data.shape[1]
+low_res_noise_data = np.array([rescale(im, downsampling_ratio) for im in noisy_data]).astype('float32')
+
 logger.info("Beginning experiment ... ")
 logger.info("Using " + clustering_type + " clustering with " + str(k) + " centers and " + str(n_angles) + "angles")
 logger.info("Requested " + str(ncores) + " out of " + str(multiprocessing.cpu_count()))
 
 image_dataset = Dataset_Operations(noisy_data, metric=clustering_type)
-
+low_res_data = Dataset_Operations(low_res_noise_data, metric=clustering_type)
 ## Clustering Logic
 
 def update_distance_for(center):
@@ -95,23 +102,23 @@ def initialize_centers(init='random_selected'):
         centers = _k_plus_plus()
 
 def _k_plus_plus():
-    chosen_centers_idx = [np.random.randint(image_dataset.n)]
-    distances = np.zeros((image_dataset.n, len(chosen_centers_idx),len(angles)))
+    chosen_centers_idx = [np.random.randint(low_res_data.n)]
+    distances = np.zeros((low_res_data.n, len(chosen_centers_idx),len(angles)))
     for _ in tqdm(range(k-1)):
         if len(chosen_centers_idx) > 1:
-            new_distances = np.zeros((image_dataset.n, len(chosen_centers_idx),len(angles)))
+            new_distances = np.zeros((low_res_data.n, len(chosen_centers_idx),len(angles)))
             new_distances[:, :len(chosen_centers_idx) - 1, :] = old_distances
             distances = new_distances
         for j, angle in enumerate(angles):
-            dist = image_dataset.batch_distance_to(ndimage.rotate(image_dataset[chosen_centers_idx[-1]], angle, reshape=False))
+            dist = low_res_data.batch_distance_to(ndimage.rotate(low_res_data[chosen_centers_idx[-1]], angle, reshape=False))
             distances[:, -1, j] = dist
         old_distances = distances.copy()
-        distances = distances.reshape(image_dataset.n, len(chosen_centers_idx) *len(angles))
+        distances = distances.reshape(low_res_data.n, len(chosen_centers_idx) *len(angles))
         distances = distances.min(axis=1)**2
         distances[chosen_centers_idx] = 0
         probabilities = distances/distances.sum()
         probabilities = probabilities.reshape(image_dataset.n)
-        next_center = np.random.choice(image_dataset.n, 1, probabilities.tolist())[0]
+        next_center = np.random.choice(low_res_data.n, 1, probabilities.tolist())[0]
         chosen_centers_idx.append(next_center)
     centers = []
     for idx in chosen_centers_idx:
@@ -142,4 +149,4 @@ def cluster(niter = 5, ncores = 1, init='random_selected'):
         centers = image_dataset.batch_oriented_average(idxs, orientation_lists)
         save()
 
-cluster(niter=n_iter, ncores=ncores, init='k++')
+cluster(niter=n_iter, ncores=ncores)
