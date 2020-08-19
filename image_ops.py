@@ -14,8 +14,8 @@ class Dataset_Operations:
 
     def batch_distance_to(self, image):
         if self.metric == 'l2':
-            distances = [((self.images[i] - image)**2).sum() for i in range(len(self.images))]
-            return np.array(np.sqrt(distances))
+            distances = [np.linalg.norm(self.images[i] - image) for i in range(len(self.images))]
+            return np.array(distances)
 
         elif self.metric == 'wemd':
             wavelet_img =  wave_transform_volumes([image], self.level)[0]
