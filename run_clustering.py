@@ -55,7 +55,7 @@ ref_angles = np.load("data/" + data_file + "_angles.npy")
 if snr == 0:
     noisy_data = data
 else:
-    noisy_data = add_noise(data, snr)
+    noisy_data = add_noise(data, 1/snr)
 
 noisy_data = noisy_data.astype('float32')
 downsampling_ratio = downsampled_resolution / noisy_data.shape[1]
