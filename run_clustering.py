@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--snr', type=int, default=0)
 parser.add_argument('--k', type=int,  default=100)
 parser.add_argument('--n_angles', type=int,  default=200)
-parser.add_argument('--niter', type=int, default=5)
+parser.add_argument('--niter', type=int, default=35)
 parser.add_argument('--ncores', type=int, default=4)
 
 parser.add_argument('--data_file_prefix', type=str, default='ribosome')
@@ -128,19 +128,31 @@ def _k_plus_plus():
         centers.append(image_dataset[idx])
     return centers
 
-def cluster(niter = 5, ncores = 1, init='random_selected'):
+def cluster(niter = 25, ncores = 1, init='random_selected', tolerance = 100):
     global centers
     global labels
     initialize_centers(init=init)
     pool = multiprocessing.Pool(processes=ncores)
 
+    old_loss = np.inf
+    losses = []
     for _ in tqdm(range(niter)):
+        save()
         dists = np.array(pool.map(update_distance_for, centers))
         distances = np.transpose(dists, (2,0,1))
         min_distance_idxs = distances.reshape(image_dataset.n, k * len(angles)).argmin(axis=1)
 
+        min_dists = distances.reshape(image_dataset.n, k * len(angles)).min(axis=1)
+        loss = np.sum(min_dists**2)
+        losses.append(loss)
+        print(loss)
+        if np.abs(loss - old_loss) < tolerance:
+            print('converged')
+            break
+        else:
+            old_loss = loss
+
         labels = np.floor(min_distance_idxs / len(angles))
-        labels = labels
         orientations = np.array([angles[i] for i in min_distance_idxs % len(angles)])
 
         idxs = [[] for i in range(k)]
@@ -150,7 +162,7 @@ def cluster(niter = 5, ncores = 1, init='random_selected'):
             idxs[label].append(idx)
             orientation_lists[label].append(orientations[idx])
         centers = image_dataset.batch_oriented_average(idxs, orientation_lists)
-        save()
+    print(losses)
 
 if __name__ == "__main__":
     cluster(niter=n_iter, ncores=ncores, init='k++')
