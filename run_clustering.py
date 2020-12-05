@@ -49,8 +49,8 @@ def add_noise(images, snr):
     noise_var = power_clean/snr
     return images + np.sqrt(noise_var)*np.random.normal(0, 1, images.shape)
 logger.info("Loading" + data_file + " data at snr level " + str(snr))
-data = np.load("data/" + data_file + "_images.npy")
-ref_angles = np.load("data/" + data_file + "_angles.npy")
+data = np.load("data/" + data_file + "_images_centered.npy")
+ref_angles = np.load("data/" + data_file + "_angles_centered.npy")
 
 if snr == 0:
     noisy_data = data

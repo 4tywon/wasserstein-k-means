@@ -14,7 +14,7 @@ class Dataset_Operations:
 
     def batch_distance_to(self, image):
         if self.metric == 'l2':
-            distances = [np.linalg.norm(self.images[i] - image) for i in range(len(self.images))]
+            distances = [((self.images[i] - image)**2).sum() for i in range(len(self.images))]
             return np.array(distances)
 
         elif self.metric == 'wemd':
