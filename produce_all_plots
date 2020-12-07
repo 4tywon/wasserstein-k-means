@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+## Run Experiments
+python run_clustering.py --clustering_type wemd --n_angles 200 --k 150 --ncores 5 --snr 8
+python run_clustering.py --clustering_type wemd --n_angles 200 --k 150 --ncores 5 --snr 12
+python run_clustering.py --clustering_type wemd --n_angles 200 --k 150 --ncores 5 --snr 16
+
+python run_clustering.py --clustering_type l2 --n_angles 200 --k 150 --ncores 5 --snr 8
+python run_clustering.py --clustering_type l2 --n_angles 200 --k 150 --ncores 5 --snr 12
+python run_clustering.py --clustering_type l2 --n_angles 200 --k 150 --ncores 5 --snr 16
+
+## Make Plots
+python plotting.py --snr 8 --outfile plots-
+python plotting.py --snr 12 --outfile plots-
+python plotting.py --snr 16 --outfile plots-
+

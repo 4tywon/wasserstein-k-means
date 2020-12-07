@@ -23,7 +23,6 @@ parser.add_argument('--ncores', type=int, default=4)
 
 parser.add_argument('--data_file_prefix', type=str, default='ribosome')
 parser.add_argument('--clustering_type', type=str,  default='l2')
-parser.add_argument('--experiment_name', type=str, required=True)
 
 
 args = parser.parse_args()
@@ -36,7 +35,7 @@ k = args.k
 n_angles = args.n_angles
 angles = [360/n_angles * i for i in range(n_angles)]
 n_iter = args.niter
-experiment_name = args.experiment_name
+experiment_name = args.clustering_type + "-" + str(args.snr)
 ncores = args.ncores
 centers = None
 labels = None
