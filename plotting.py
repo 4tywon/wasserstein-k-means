@@ -10,11 +10,11 @@ parser.add_argument('--outfile', type=str, required=True)
 parser.add_argument('--snr', type=int, required=True)
 
 args = parser.parse_args()
-l2_centers = np.load("experiment_runs/l2-" + str(args.snr) + "-centered-centers.npy")
-emd_centers = np.load("experiment_runs/wemd-"+ str(args.snr) + "-centered-centers.npy")
+l2_centers = np.load("experiment_runs/l2-" + str(args.snr) + "-centers.npy")
+emd_centers = np.load("experiment_runs/wemd-"+ str(args.snr) + "-centers.npy")
 
-l2_labels = np.load("experiment_runs/l2-" + str(args.snr) + "-centered-labels.npy")
-emd_labels = np.load("experiment_runs/wemd-" + str(args.snr) + "-centered-labels.npy")
+l2_labels = np.load("experiment_runs/l2-" + str(args.snr) + "-labels.npy")
+emd_labels = np.load("experiment_runs/wemd-" + str(args.snr) + "-labels.npy")
 outfile = 'figures/' + args.outfile
 
 ref_angles = np.load("data/ribosome_angles_centered.npy")
